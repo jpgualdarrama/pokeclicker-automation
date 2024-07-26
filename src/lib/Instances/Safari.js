@@ -7,7 +7,9 @@ class AutomationSafari
                           CollectItems: "Safari-CollectItems",
                           FeatureEnabled: "Safari-HuntEnabled",
                           FocusOnBaitAchievements: "Safari-BaitAchievements",
-                          InfinitRepeat: "Safari-InfinitRepeat"
+                          InfinitRepeat: "Safari-InfinitRepeat",
+                          /// @TODO: Use filters instead of this rudimentary setting
+                          SkipResistant: "Safari-SkipResistant",
                       };
 
     /**
@@ -22,6 +24,7 @@ class AutomationSafari
             // Set the advanced settings default values
             Automation.Utils.LocalStorage.setDefaultValue(this.Settings.CollectItems, true);
             Automation.Utils.LocalStorage.setDefaultValue(this.Settings.FocusOnBaitAchievements, false);
+            Automation.Utils.LocalStorage.setDefaultValue(this.Settings.SkipResistant, false);
 
             // Set to solo run by default
             Automation.Utils.LocalStorage.setDefaultValue(this.Settings.InfinitRepeat, false);
@@ -129,6 +132,14 @@ class AutomationSafari
         Automation.Menu.addLabeledAdvancedSettingsToggleButton(itemsCollectionLabel,
                                                                this.Settings.CollectItems,
                                                                itemsCollectionTooltip,
+                                                               safariSettingPanel);
+
+        // Skip resistant
+        const skipResistantLabel = "Skip Pokémon that are resistant to pokerus";
+        const skipResistantTooltip = "The automation will run from pokemons that are resistant to pokerus";
+        Automation.Menu.addLabeledAdvancedSettingsToggleButton(skipResistantLabel,
+                                                               this.Settings.SkipResistant,
+                                                               skipResistantTooltip,
                                                                safariSettingPanel);
     }
 
