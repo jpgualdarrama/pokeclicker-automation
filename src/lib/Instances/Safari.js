@@ -602,6 +602,8 @@ class AutomationSafari
 
         console.log("SkipResistant = " + Automation.Utils.LocalStorage.getValue(this.Settings.SkipResistant));
         console.log("Enemy Pokerus = " + SafariBattle.enemy.pokerus + ", GameConstants.Pokerus.Resistant = " + GameConstants.Pokerus.Resistant);
+        console.log(JSON.stringify(SafariBattle.enemy, null, 4));
+        console.log(JSON.stringify(SafariBattle, null, 4));
 
         // If the user asked to complete the bait achievements, throw baits until it's done
         if ((Automation.Utils.LocalStorage.getValue(this.Settings.FocusOnBaitAchievements) === "true")
