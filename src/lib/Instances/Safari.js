@@ -600,17 +600,14 @@ class AutomationSafari
         // Do not attempt anything while the game is busy
         if (SafariBattle.busy()) return;
 
+        console.log("SkipResistant = " + Automation.Utils.LocalStorage.getValue(this.Settings.SkipResistant));
+        console.log("Enemy Pokerus = " + SafariBattle.enemy.pokerus + ", GameConstants.Pokerus.Resistant = " + GameConstants.Pokerus.Resistant);
+
         // If the user asked to complete the bait achievements, throw baits until it's done
         if ((Automation.Utils.LocalStorage.getValue(this.Settings.FocusOnBaitAchievements) === "true")
             && (this.__internal__baitAchievements.filter(a => !a.isCompleted()).length != 0))
         {
             SafariBattle.throwBait();
-        }
-        // Thow a rock at the pokémon to improve the catch rate, unless its angry or its catch factor is high enough
-        else if ((SafariBattle.enemy.angry == 0)
-                 && (SafariBattle.enemy.catchFactor < 90))
-        {
-            SafariBattle.throwRock();
         }
         // If the user asked to skip pokemon resistant to pokerus, run
         else if ((Automation.Utils.LocalStorage.getValue(this.Settings.SkipResistant) === "true")
@@ -619,6 +616,12 @@ class AutomationSafari
             SafariBattle.run();
         }
         // Try to catch the pokémon
+        // Thow a rock at the pokémon to improve the catch rate, unless its angry or its catch factor is high enough
+        else if ((SafariBattle.enemy.angry == 0)
+                 && (SafariBattle.enemy.catchFactor < 90))
+        {
+            SafariBattle.throwRock();
+        }
         else
         {
             SafariBattle.throwBall();
