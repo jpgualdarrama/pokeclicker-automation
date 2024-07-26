@@ -612,6 +612,12 @@ class AutomationSafari
         {
             SafariBattle.throwRock();
         }
+        // If the user asked to skip pokemon resistant to pokerus, run
+        else if ((Automation.Utils.LocalStorage.getValue(this.Settings.SkipResistant) === "true")
+            && SafariBattle.enemy.pokerus >= GameConstants.Pokerus.Resistant)
+        {
+            SafariBattle.run();
+        }
         // Try to catch the pokémon
         else
         {
