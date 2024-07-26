@@ -600,10 +600,6 @@ class AutomationSafari
         // Do not attempt anything while the game is busy
         if (SafariBattle.busy()) return;
 
-        console.log("SkipResistant = " + Automation.Utils.LocalStorage.getValue(this.Settings.SkipResistant));
-        console.log("Enemy Pokerus = " + SafariBattle.enemy.pokerus + ", GameConstants.Pokerus.Resistant = " + GameConstants.Pokerus.Resistant);
-        console.log(JSON.stringify(SafariBattle.enemy, null, 4));
-
         // If the user asked to complete the bait achievements, throw baits until it's done
         if ((Automation.Utils.LocalStorage.getValue(this.Settings.FocusOnBaitAchievements) === "true")
             && (this.__internal__baitAchievements.filter(a => !a.isCompleted()).length != 0))
