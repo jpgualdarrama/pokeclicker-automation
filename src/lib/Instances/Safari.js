@@ -610,6 +610,14 @@ class AutomationSafari
         else if ((Automation.Utils.LocalStorage.getValue(this.Settings.SkipResistant) === "true")
             && PartyController.getPokerusStatus(SafariBattle.enemy.id) >= GameConstants.Pokerus.Resistant)
         {
+            // if the encounter is a shiny, need to confirm the run button after we call run
+            // TODO: Use filters to determine if we should attempt to catch the shiny
+            if(SafariBattle.enemy.shiny) {
+                console.log("Shiny encountered! Setting timeout for " + SafariBattle.Speed.turnLength * 2)
+                // the run() function delays for SafariBattle.Speed.turnLength,
+                // so we delay for 2x SafariBattle.Speed.turnLength
+                setTimeout(SafariBattle.Speed.turnLength * 2, () => $('[id^=modalConfirm]').click());
+            }
             SafariBattle.run();
         }
         // Try to catch the pokémon
