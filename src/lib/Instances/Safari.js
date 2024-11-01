@@ -616,9 +616,9 @@ class AutomationSafari
                 console.log("Shiny encountered! Setting timeout for " + SafariBattle.Speed.turnLength * 2)
                 // the run() function delays for SafariBattle.Speed.turnLength,
                 // so we delay for 2x SafariBattle.Speed.turnLength
-                setTimeout(SafariBattle.Speed.turnLength * 2, () => $('[id^=modalConfirm]').click());
+                setTimeout(() => $('[id^=modalConfirm]').click(), SafariBattle.Speed.turnLength * 2);
             }
-            SafariBattle.run();
+            setTimeout(() => SafariBattle.run(), SafariBattle.Speed.turnLength);
         }
         // Try to catch the pokémon
         // Thow a rock at the pokémon to improve the catch rate, unless its angry or its catch factor is high enough
