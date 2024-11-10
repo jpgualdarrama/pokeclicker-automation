@@ -10,6 +10,8 @@ class AutomationSafari
                           InfinitRepeat: "Safari-InfinitRepeat",
                           /// @TODO: Use filters instead of this rudimentary setting
                           SkipResistant: "Safari-SkipResistant",
+                          AvoidWater: "Safari-AvoidWater",
+                          AvoidGrass: "Safari-AvoidGrass"
                       };
 
     /**
@@ -25,6 +27,8 @@ class AutomationSafari
             Automation.Utils.LocalStorage.setDefaultValue(this.Settings.CollectItems, true);
             Automation.Utils.LocalStorage.setDefaultValue(this.Settings.FocusOnBaitAchievements, false);
             Automation.Utils.LocalStorage.setDefaultValue(this.Settings.SkipResistant, false);
+            Automation.Utils.LocalStorage.setDefaultValue(this.Settings.AvoidWater, false);
+            Automation.Utils.LocalStorage.setDefaultValue(this.Settings.AvoidGrass, false);
 
             // Set to solo run by default
             Automation.Utils.LocalStorage.setDefaultValue(this.Settings.InfinitRepeat, false);
@@ -140,6 +144,24 @@ class AutomationSafari
         Automation.Menu.addLabeledAdvancedSettingsToggleButton(skipResistantLabel,
                                                                this.Settings.SkipResistant,
                                                                skipResistantTooltip,
+                                                               safariSettingPanel);
+
+        // Avoid water
+        const avoidWaterLabel = "Avoid water";
+        const avoidWaterTooltip = "The automation will move around water tiles\n"
+                                + " and will not collect items in water";
+        Automation.Menu.addLabeledAdvancedSettingsToggleButton(avoidWaterLabel,
+                                                               this.Settings.AvoidWater,
+                                                               avoidWaterTooltip,
+                                                               safariSettingPanel);
+
+        // Avoid grass
+        const avoidGrassLabel = "Avoid grass";
+        const avoidGrassTooltip = "The automation will move around grass tiles\n"
+                                + " and will not collect items in grass";
+        Automation.Menu.addLabeledAdvancedSettingsToggleButton(avoidGrassLabel,
+                                                               this.Settings.AvoidGrass,
+                                                               avoidGrassTooltip,
                                                                safariSettingPanel);
     }
 
