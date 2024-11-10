@@ -386,11 +386,13 @@ class AutomationSafari
             && (Safari.itemGrid().length != 0))
         {
             // Move the player to the nearest item
+            /* JP Add Code in __internal__moveToNearestItem to use avoid water and avoid grass */
             this.__internal__moveToNearestItem();
             return;
         }
 
         // Move the player to the nearest encounter
+        /* JP Add Code in __internal__moveToNearestEncounterZone to use avoid water and avoid grass */
         this.__internal__moveToNearestEncounterZone();
     }
 
@@ -474,6 +476,8 @@ class AutomationSafari
                 }
             }
         }
+
+        console.log("Move cost matrix: ", this.__internal__safariMovesCost);
     }
 
     /**
@@ -547,7 +551,7 @@ class AutomationSafari
                 && (this.__internal__safariMovesCost[y][x] === cost);
         }.bind(this);
 
-        // Stop at cost = 1, which is the till right next to the player
+        // Stop at cost = 1, which is the tile right next to the player
         while (cost > 1)
         {
             --cost;
