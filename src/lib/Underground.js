@@ -516,6 +516,7 @@ class AutomationUnderground
      */
     static __internal__tradeDiamondsLoop()
     {
+        /* Disabling because it doesn't work in 10.23
         if (Automation.Utils.LocalStorage.getValue(this.Settings.TradeDiamonds) !== "true")
         {
             return;
@@ -571,5 +572,6 @@ class AutomationUnderground
             Automation.Notifications.sendNotif(`Performed ${dealsDone} underground daily deals for a total profit of ${totalProfit} ${diamondImage}`,
                                                "Mining");
         }
+        */
     }
 }
