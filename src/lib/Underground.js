@@ -463,6 +463,8 @@ class AutomationUnderground
     {
         let itemsState = new Map();
 
+        /* Disabling because it doesn't work in 10.23
+
         for (const row of Array(Mine.rewardGrid.length).keys())
         {
             for (const column of Array(Mine.rewardGrid[row].length).keys())
@@ -488,6 +490,7 @@ class AutomationUnderground
                 }
             }
         }
+        */
 
         return itemsState;
     }
