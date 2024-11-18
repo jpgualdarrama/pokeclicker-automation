@@ -253,9 +253,16 @@ class AutomationUnderground
             {
 
                 // App.game.underground.battery.charges / App.game.underground.battery.maxCharges
+                console.log("App.game.underground.battery.charges = ", App.game.underground.battery.charges);
+                console.log("App.game.underground.battery.maxCharges = ", App.game.underground.battery.maxCharges);
                 if (App.game.underground.battery.charges == App.game.underground.battery.maxCharges)
                 {
+                    console.log("Discharging battery");
                     App.game.underground.battery.discharge();
+                }
+                else
+                {
+                    console.log("Not discharging battery");
                 }
 
                 // Restore energy if needed
