@@ -252,17 +252,10 @@ class AutomationUnderground
             if (this.__internal__autoMiningLoop !== null)
             {
 
-                // App.game.underground.battery.charges / App.game.underground.battery.maxCharges
-                console.log("App.game.underground.battery.charges = ", App.game.underground.battery.charges);
-                console.log("App.game.underground.battery.maxCharges = ", App.game.underground.battery.maxCharges);
+                // Discharge battery if it has reached max charge
                 if (App.game.underground.battery.charges == App.game.underground.battery.maxCharges)
                 {
-                    console.log("Discharging battery");
                     App.game.underground.battery.discharge();
-                }
-                else
-                {
-                    console.log("Not discharging battery");
                 }
 
                 // Restore energy if needed
