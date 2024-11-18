@@ -251,6 +251,13 @@ class AutomationUnderground
 
             if (this.__internal__autoMiningLoop !== null)
             {
+
+                // App.game.underground.battery.charges / App.game.underground.battery.maxCharges
+                if (App.game.underground.battery.charges == App.game.underground.battery.maxCharges)
+                {
+                    App.game.underground.battery.discharge();
+                }
+
                 // Restore energy if needed
                 this.__internal__restoreUndergroundEnergy();
 
