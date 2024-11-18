@@ -11,7 +11,8 @@ class AutomationUnderground
                           UseRestoreItems: "Mining-UseRestoreItems",
                           RestrictRestoreItemsToMiningQuests: "Mining-RestrictRestoreItemsToMiningQuests",
                           TradeDiamonds: "Mining-TradeDiamonds",
-                          TradeAnyToDiamonds: "Mining-TradeAnyToDiamonds"
+                          TradeAnyToDiamonds: "Mining-TradeAnyToDiamonds",
+                          DischargeBattery: "Mining-DischargeBattery"
                       };
 
     /**
@@ -195,6 +196,17 @@ class AutomationUnderground
                                                   {
                                                       this.__internal__tradeDiamondsIfMineEnabled(this.Settings.TradeAnyToDiamonds);
                                                   }.bind(this), false);
+
+
+
+        /*********************\
+        |* Discharge battery *|
+        \*********************/
+
+        let dischargeBatteryLabel = 'Automatically discharge the battery';
+        let dischargeBatteryToolip = "Allows the mining feature to discharge the battery when the Cell Battery " +
+            "Oak Item is equipped";
+        Automation.Menu.addLabeledAdvancedSettingsToggleButton(dischargeBatteryLabel, this.Settings.DischargeBattery, dischargeBatteryToolip, miningSettingPanel);
     }
 
     /**
@@ -253,9 +265,12 @@ class AutomationUnderground
             {
 
                 // Discharge battery if it has reached max charge
-                if (App.game.underground.battery.charges == App.game.underground.battery.maxCharges)
+                if (Automation.Utils.LocalStorage.getValue(this.Settings.DischargeBattery) === "true")
                 {
-                    App.game.underground.battery.discharge();
+                    if (App.game.underground.battery.charges == App.game.underground.battery.maxCharges)
+                    {
+                        App.game.underground.battery.discharge();
+                    }
                 }
 
                 // Restore energy if needed
