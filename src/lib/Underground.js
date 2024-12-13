@@ -7,11 +7,8 @@
 class AutomationUnderground
 {
     static Settings = {
-                          FeatureEnabled: "Mining-Enabled",
-                          UseRestoreItems: "Mining-UseRestoreItems",
-                          RestrictRestoreItemsToMiningQuests: "Mining-RestrictRestoreItemsToMiningQuests",
-                          DischargeBattery: "Mining-DischargeBattery"
-};
+                          FeatureEnabled: "Mining-Enabled"
+                      };
 
     /**
      * @brief Builds the menu, and retores previous running state if needed
@@ -43,9 +40,6 @@ class AutomationUnderground
      */
     static toggleAutoMining(enable)
     {
-        // TODO This feature needs a full rework
-        return;
-
         if (!App.game.underground.canAccess())
         {
             return;
@@ -59,6 +53,14 @@ class AutomationUnderground
 
         if (enable)
         {
+            // Warn the user if no autorestart mine have been set
+            if (!Settings.getSetting('autoRestartUndergroundMine').value)
+            {
+                Automation.Notifications.sendWarningNotif("Please consider enabling the ingame 'mine auto restart feature'\n"
+                                                        + "If you don't, the automation will be stuck after clearing the current layout",
+                                                          "Mining");
+            }
+
             // Only set a loop if there is none active
             if (this.__internal__autoMiningLoop === null)
             {
@@ -85,6 +87,8 @@ class AutomationUnderground
     static __internal__innerMiningLoop = null;
 
     static __internal__actionCount = 0;
+    static __internal__canUseHammer = false;
+    static __internal__canUseChisel = false;
 
     /**
      * @brief Builds the menu
@@ -104,74 +108,19 @@ class AutomationUnderground
             this.__internal__setUndergroundUnlockWatcher();
         }
 
-        let autoMiningTooltip = "Automatically mine in the Underground"
-                            + Automation.Menu.TooltipSeparator
-                            + "Bombs will be used until all items have at least one visible tile\n"
-                            + "The hammer will then be used if more than 3 blocks\n"
-                            + "can be destroyed on an item within its range\n"
-                            + "The chisel will then be used to finish the remaining blocks\n";
+        const autoMiningTooltip = "Automatically mine in the Underground"
+                                + Automation.Menu.TooltipSeparator
+                                + "Survey will be used as soon as available, unless all items were already found\n"
+                                + "If equipped, the battery discharge will be used as soon as charged\n"
+                                + "Bombs will be used as soon as available, unless all items were already found\n"
+                                + "If the bomb's durability is maxed-out, it will be used regardless,\n"
+                                + "unless the tool reached infinite use\n"
+                                + "Then it tries to use the best possible tool to complete a partially found item\n"
+                                + "or find a hidden one";
 
-        // Warn the user that this feature is not available for now
-        autoMiningTooltip = "⚠️ Since v0.10.23 this feature does not work anymore ⚠️"
-                          + Automation.Menu.TooltipSeparator
-                          + "A full rework was performed by the pokeclicker team.\n"
-                          + "This requires a full rework of the automation.";
-
-        let miningButton =
+        const miningButton =
             Automation.Menu.addAutomationButton("Mining", this.Settings.FeatureEnabled, autoMiningTooltip, this.__internal__undergroundContainer);
-        // TODO Restore this once the feature is back
-        // miningButton.addEventListener("click", this.toggleAutoMining.bind(this), false);
-
-        // this.__internal__buildAdvancedSettings(this.__internal__undergroundContainer);
-
-        // Disable the feature until a new one is implemented
-        Automation.Menu.forceAutomationState(this.Settings.FeatureEnabled, false);
-        Automation.Menu.setButtonDisabledState(this.Settings.FeatureEnabled, true);
-        miningButton.parentElement.setAttribute("automation-tooltip-disable-reason", "\n");
-    }
-
-    /**
-     * @brief Adds the Underground advanced settings panel
-     *
-     * @param parent: The div container to insert the settings to
-     */
-    static __internal__buildAdvancedSettings(parent)
-    {
-        // Build advanced settings panel
-        let miningSettingPanel = Automation.Menu.addSettingPanel(parent);
-        miningSettingPanel.style.textAlign = "right";
-
-        let titleDiv = Automation.Menu.createTitleElement("Mining advanced settings");
-        titleDiv.style.marginBottom = "10px";
-        miningSettingPanel.appendChild(titleDiv);
-
-        /*********************\
-        |* Use restore items *|
-        \*********************/
-
-        let useRestoreLabel = 'Automatically use restore items';
-        let useRestoreTooltip = "Allows the mining feature use Restore items if the mining energy goes under 10";
-        Automation.Menu.addLabeledAdvancedSettingsToggleButton(useRestoreLabel, this.Settings.UseRestoreItems, useRestoreTooltip, miningSettingPanel);
-
-        /*************************************************\
-        |* Restict restore items to active mining quests *|
-        \*************************************************/
-
-        let restrictRestoreLabel = 'Only use restore items when a mining quest is active';
-        Automation.Menu.addLabeledAdvancedSettingsToggleButton(
-            restrictRestoreLabel, this.Settings.RestrictRestoreItemsToMiningQuests, "", miningSettingPanel);
-
-        // Split the two setting groups
-        miningSettingPanel.appendChild(document.createElement("br"))
-
-        /*********************\
-        |* Discharge battery *|
-        \*********************/
-
-        let dischargeBatteryLabel = 'Automatically discharge the battery';
-        let dischargeBatteryTooltip = "Allows the mining feature to discharge the battery when the Cell Battery " +
-            "Oak Item is equipped";
-        Automation.Menu.addLabeledAdvancedSettingsToggleButton(dischargeBatteryLabel, this.Settings.DischargeBattery, dischargeBatteryTooltip, miningSettingPanel);
+        miningButton.addEventListener("click", this.toggleAutoMining.bind(this), false);
     }
 
     /**
@@ -192,293 +141,547 @@ class AutomationUnderground
     }
 
     /**
-     * @brief Ensures that using a bomb is possible
+     * @brief The main Mining loop
      *
-     * It is possible is the player has enough energy and the current mining board is not completed already
-     *
-     * @returns True if a bombing action is possible, False otherwise
-     */
-    static __internal__isBombingPossible()
-    {
-        return ((Math.floor(App.game.underground.energy) >= Underground.BOMB_ENERGY)
-                && (Mine.itemsFound() < Mine.itemsBuried()));
-    }
-
-    /**
-     * @brief The Mining loop
-     *
-     * Automatically mines item in the underground.
-     * The following strategy is used:
-     *   - Use a bomb until at least one tile of each item is revealed
-     *   - Then, use the hammer on covered blocks, if at least three tiles can be removed that way
-     *   - Finally use the chisel to reveal the remaining tiles
+     * It will try to run the mining inner loop if it's not already active
      */
     static __internal__miningLoop()
     {
         // Don't run an additionnal loop if another one is already in progress
-        if (this.__internal__innerMiningLoop !== null)
+        // Or the user launched a mine discovery
+        if ((this.__internal__innerMiningLoop !== null)
+            || (App.game.underground.mine.timeUntilDiscovery > 0))
         {
             return;
         }
 
         this.__internal__actionCount = 0;
         this.__internal__innerMiningLoop = setInterval(function()
-        {
-            let nothingElseToDo = true;
-
-            if (this.__internal__autoMiningLoop !== null)
             {
-
-                // Discharge battery if it has reached max charge
-                if (Automation.Utils.LocalStorage.getValue(this.Settings.DischargeBattery) === "true")
+                // Stop the loop if the main feature loop was stopped, or no action was possible
+                if ((this.__internal__autoMiningLoop == null)
+                    || !this.__internal__tryUseOneMiningItem())
                 {
-                    if (App.game.underground.battery.charges == App.game.underground.battery.maxCharges)
+                    // Only notify the user if at least one action occured
+                    if (this.__internal__actionCount > 0)
                     {
-                        App.game.underground.battery.discharge();
+                        Automation.Notifications.sendNotif(`Performed mining actions ${this.__internal__actionCount.toString()} times!`,
+                                                           "Mining");
                     }
+                    clearInterval(this.__internal__innerMiningLoop);
+                    this.__internal__innerMiningLoop = null;
                 }
-
-                // Restore energy if needed
-                this.__internal__restoreUndergroundEnergy();
-
-                let itemsState = this.__internal__getItemsState();
-
-                let areAllItemRevealed = true;
-                for (const item of itemsState.values())
-                {
-                    areAllItemRevealed &= item.revealed;
-                }
-
-                if (!areAllItemRevealed)
-                {
-                    // Bombing is the best strategy until all items have at least one revealed spot
-                    if (this.__internal__isBombingPossible())
-                    {
-                        // Mine using bombs until the board is completed or the energy is depleted
-                        Mine.bomb();
-                        this.__internal__actionCount++;
-                        nothingElseToDo = false;
-                    }
-                }
-                else
-                {
-                    nothingElseToDo = !this.__internal__tryToUseTheBestItem(itemsState);
-                }
-            }
-
-            if (nothingElseToDo)
-            {
-                if (this.__internal__actionCount > 0)
-                {
-                    Automation.Notifications.sendNotif(`Performed mining actions ${this.__internal__actionCount.toString()} times,`
-                                                     + ` energy left: ${Math.floor(App.game.underground.energy).toString()}!`,
-                                                       "Mining");
-                }
-                clearInterval(this.__internal__innerMiningLoop);
-                this.__internal__innerMiningLoop = null;
-                return;
-            }
-        }.bind(this), 300); // Runs every 0.3s
+            }.bind(this), 300); // Runs every 0.3s
     }
 
     /**
-     * @brief Tries to use available Restore pots if the player's energy goes under the cost of a bomb
-     */
-    static __internal__restoreUndergroundEnergy()
-    {
-        // Only use Restore items if the user allowed it, and it's under the provided threshold
-        if ((Automation.Utils.LocalStorage.getValue(this.Settings.UseRestoreItems) !== "true")
-            || (Math.floor(App.game.underground.energy) >= Underground.BOMB_ENERGY))
-        {
-            return;
-        }
-
-        if (Automation.Utils.LocalStorage.getValue(this.Settings.RestrictRestoreItemsToMiningQuests) === "true")
-        {
-            let hasActiveMiningQuests = App.game.quests.currentQuests().some(
-                (quest) => (Automation.Utils.isInstanceOf(quest, "MineItemsQuest") || Automation.Utils.isInstanceOf(quest, "MineLayersQuest"))
-                        && !quest.isCompleted());
-            if (!hasActiveMiningQuests)
-            {
-                return;
-            }
-        }
-
-        // Try to use any type of Restore item
-        for (const itemValue of Object.keys(GameConstants.EnergyRestoreSize).filter(x => !isNaN(x)))
-        {
-            let restoreItemName = GameConstants.EnergyRestoreSize[itemValue];
-
-            // Restore at enough energy to use a bomb (which is the most expensive item)
-            while (Math.floor(App.game.underground.energy) < Underground.BOMB_ENERGY)
-            {
-                // Don't try to consume item that the player doesn't have in stock
-                if (player.itemList[restoreItemName]() <= 0)
-                {
-                    break;
-                }
-
-                ItemList[restoreItemName].use();
-            }
-
-            // Don't restore more than needed
-            if (Math.floor(App.game.underground.energy) >= Underground.BOMB_ENERGY)
-            {
-                break;
-            }
-        }
-    }
-
-    /**
-     * @brief Determines which tools to use according to @see __internal__miningLoop strategy, and tries to use it
+     * @brief The inner Mining loop - Automatically mines item in the underground.
      *
-     * @param {Map} itemsState: The map of item states
+     * The following strategy is used:
+     *   - Use a survey if available, unless all items were already found
+     *   - Use the batterie discharge if available
+     *   - Use a bomb if available, unless all items were already found
+     *   - Use a bomb regardless, if its durability is maxed out, unless the tool reached infinite use
+     *   - Tries to use the best possible tool to:
+     *     - Complete a partially found item (@see __internal__tryUseBestToolOnPartiallyFoundItem)
+     *     - Find a new item (@see __internal__tryUseBestToolToFindNewItem)
      *
-     * @returns True if some action are still possible after the current move, false otherwise (if the player does not have enough energy)
+     * @return True if an action occured, false otherwise
      */
-    static __internal__tryToUseTheBestItem(itemsState)
+    static __internal__tryUseOneMiningItem()
     {
-        let nextTilesToMine = [];
+        let actionOccured = false;
 
-        for (const item of itemsState.values())
+        const centerMostCellCoord = { x: App.game.underground.mine.width / 2, y: App.game.underground.mine.height / 2 };
+        const areAllItemFound = App.game.underground.mine.itemsPartiallyFound == App.game.underground.mine.itemsBuried;
+
+        // Try to use the Survey, unless all items were already found
+        if (!areAllItemFound && App.game.underground.tools.getTool(UndergroundToolType.Survey).canUseTool())
         {
-            if (!item.completed)
-            {
-                nextTilesToMine = nextTilesToMine.concat(item.tiles);
-            }
+            // Use the survey on the center-most cell
+            App.game.underground.tools.useTool(UndergroundToolType.Survey, centerMostCellCoord.x, centerMostCellCoord.y);
+            actionOccured = true;
         }
 
-        if (nextTilesToMine.length == 0)
+        // Try to use the battery discharge
+        if (!actionOccured && App.game.oakItems.isActive(OakItemType.Cell_Battery)
+            && (App.game.underground.battery.charges == App.game.underground.battery.maxCharges))
         {
-            return true;
+            App.game.underground.battery.discharge();
+            actionOccured = true;
         }
 
-        let { useHammer, useToolX, useToolY } = this.__internal__considerHammerUse(nextTilesToMine);
-
-        let result = false;
-        if (useHammer)
+        // Try to use the Bomb, unless all items were already found
+        // If the bomb if fully charged, use it anyway, unless the tool reached infinite use
+        const bombTool = App.game.underground.tools.getTool(UndergroundToolType.Bomb);
+        if (!actionOccured
+            && (!areAllItemFound || ((bombTool.restoreRate > 0) && (bombTool.durability == 1)))
+            && bombTool.canUseTool())
         {
-            result = (App.game.underground.energy >= Underground.HAMMER_ENERGY);
-            Mine.hammer(useToolX, useToolY);
-        }
-        else
-        {
-            // Only consider unrevealed tiles
-            nextTilesToMine = nextTilesToMine.filter((tile) => !tile.revealed);
-
-            result = (App.game.underground.energy >= Underground.CHISEL_ENERGY);
-            Mine.chisel(nextTilesToMine[0].x, nextTilesToMine[0].y);
+            // Use the bomb on the center-most cell
+            App.game.underground.tools.useTool(UndergroundToolType.Bomb, centerMostCellCoord.x, centerMostCellCoord.y);
+            actionOccured = true;
         }
 
-        if (result)
+        this.__internal__canUseHammer = App.game.underground.tools.getTool(UndergroundToolType.Hammer).canUseTool();
+        this.__internal__canUseChisel = App.game.underground.tools.getTool(UndergroundToolType.Chisel).canUseTool();
+
+        if (!actionOccured && (this.__internal__canUseHammer || this.__internal__canUseChisel))
+        {
+            // Try to complete partially found item, then try to find hidden ones
+            actionOccured = this.__internal__tryUseBestToolOnPartiallyFoundItem()
+                         || this.__internal__tryUseBestToolToFindNewItem();
+        }
+
+        if (actionOccured)
         {
             this.__internal__actionCount++;
+        }
+
+        return actionOccured;
+    }
+
+    /**
+     * @brief Tries to complete any already partially discovered item
+     *
+     * @return True if an action occured, false otherwise
+     */
+    static __internal__tryUseBestToolOnPartiallyFoundItem()
+    {
+        // No partially found item
+        if (App.game.underground.mine.itemsPartiallyFound == App.game.underground.mine.itemsFound)
+        {
+            return false;
+        }
+
+        let selectedBestMove = null;
+
+        for (const itemData of this.__internal__getPartiallyRevealedItems())
+        {
+            selectedBestMove = this.__internal__selectBestMove(selectedBestMove, this.__internal__getPartiallyRevealedItemBestMove(itemData));
+        }
+
+        if (selectedBestMove == null)
+        {
+            return false;
+        }
+
+        App.game.underground.tools.useTool(selectedBestMove.tool, selectedBestMove.coord.x, selectedBestMove.coord.y);
+        return true;
+    }
+
+    /**
+     * @brief Tries to reveal any undiscovered item
+     *
+     * @return True if an action occured, false otherwise
+     */
+    static __internal__tryUseBestToolToFindNewItem()
+    {
+        let selectedBestMove = null;
+
+        for (const index of App.game.underground.mine.grid.keys())
+        {
+            selectedBestMove = this.__internal__selectBestMove(selectedBestMove, this.__internal__getHiddenItemBestMove(index));
+        }
+
+        if (selectedBestMove == null)
+        {
+            return false;
+        }
+
+        App.game.underground.tools.useTool(selectedBestMove.tool, selectedBestMove.coord.x, selectedBestMove.coord.y);
+        return true;
+    }
+
+    /**
+     * @brief Determines the best tool to use to reveal a partially found item
+     *
+     * @param itemData: The partially found item data
+     *
+     * @return The best possible move
+     */
+    static __internal__getPartiallyRevealedItemBestMove(itemData)
+    {
+        let selectedBestMove = null;
+
+        for (const itemCell of itemData.cells)
+        {
+            // Only consider actions on hidden cells with visible neighbor
+            if (itemCell.isRevealed || !this.__internal__cellHasVisibleNeighborWithTheSameItem(itemData, itemCell))
+            {
+                continue;
+            }
+
+            if (this.__internal__canUseHammer)
+            {
+                selectedBestMove = this.__internal__selectBestMove(selectedBestMove, this.__internal__getHammerUseEfficiency(itemData, itemCell));
+            }
+
+            // Don't even consider Chisel if it can't be used or the best move efficiency exceeds 1 cell layers
+            if (!this.__internal__canUseChisel || ((selectedBestMove != null) && (selectedBestMove.efficiency >= 2)))
+            {
+                continue;
+            }
+
+            // The chisel efficiency is at most 2 cell layers
+            const chiselMove =
+                {
+                    tool: UndergroundToolType.Chisel,
+                    efficiency: Math.min(itemCell.cell.layerDepth, 2),
+                    coord: itemCell.coord
+                };
+            selectedBestMove = this.__internal__selectBestMove(selectedBestMove, chiselMove);
+        }
+
+        return selectedBestMove;
+    }
+
+    /**
+     * @brief Determines the best tool to reveal the cell at the given @p index
+     *
+     * @todo (23/11/2024): Consider focusing on survey area
+     *
+     * @param {number} index: The index of the cell on the Underground grid
+     *
+     * @return The best possible move
+     */
+    static __internal__getHiddenItemBestMove(index)
+    {
+        let selectedBestMove = null;
+
+        // Only consider using the hammer if we're not on a border cell
+        if (this.__internal__canUseHammer)
+        {
+            selectedBestMove = this.__internal__selectBestMove(selectedBestMove, this.__internal__getHammerRevealEfficiency(index));
+        }
+
+        // Don't even consider Chisel if it can't be used or the best move efficiency exceeds 1 cell layers
+        if (!this.__internal__canUseChisel || ((selectedBestMove != null) && (selectedBestMove.efficiency >= 2)))
+        {
+            return selectedBestMove;
+        }
+
+        const cell = App.game.underground.mine.grid[index];
+
+        // Don't consider Chisel if the cell is already visible
+        if (cell.layerDepth == 0)
+        {
+            return selectedBestMove;
+        }
+
+        // The chisel efficiency is at most 2 cell layers
+        const chiselMove =
+            {
+                tool: UndergroundToolType.Chisel,
+                efficiency: Math.min(cell.layerDepth, 2),
+                revealCount: ((cell.layerDepth <= 2) && (cell.layerDepth != 0)) ? 1 : 0,
+                coord: App.game.underground.mine.getCoordinateForGridIndex(index),
+                visibleNeighborCount: this.__internal__getCellVisibleNeighborCount(index)
+            };
+
+        return this.__internal__selectBestMove(selectedBestMove, chiselMove);
+    }
+
+    /**
+     * @brief Extracts the partially revealed items data
+     *
+     * @returns The list of partially revealed items
+     */
+    static __internal__getPartiallyRevealedItems()
+    {
+        let result = [];
+
+        for (const itemData of this.__internal__getAllItems().values())
+        {
+            // Only consider items that have at least one revealed cell, and is not already completed
+            if (!itemData.cells[0].cell.reward.rewarded
+                && itemData.cells.some(cell => cell.isRevealed))
+            {
+                result.push(itemData);
+            }
         }
 
         return result;
     }
 
     /**
-     * @brief Determines if using the hammer is more efficient than using the chisel
-
+     * @brief Extracts every items data
      *
-     * @param nextTilesToMine: The list of tiles left to mine
-     *
-     * @returns A struct { useHammer, useToolX, useToolY }, where:
-     *          @c useHammer is a boolean indicating if the use is relevant
-     *          @c useToolX and @c useToolY are the position where the use is relevant
+     * @returns The map of item's [ Id, Cells ]
+     *          Where Cells is an object containing a cells list of { cell, coord, isRevealed }
      */
-    static __internal__considerHammerUse(nextTilesToMine)
+    static __internal__getAllItems()
     {
-        let bestReachableTilesAmount = 0;
-        let bestReachableTileX = 0;
-        let bestReachableTileY = 0;
+        let items = new Map();
 
-        for (const tile of nextTilesToMine)
+        for (const [ index, cell ] of App.game.underground.mine.grid.entries())
         {
-            // Compute the best tile for hammer
-            let reachableTilesAmount = 0;
-            for (const other of nextTilesToMine)
+            // Only consider cells containing an item
+            if (cell.reward == undefined)
             {
-                // Consider tiles in the range of the hammer only
-                if (!other.revealed
-                    && (other.x <= (tile.x + 1))
-                    && (other.x >= (tile.x - 1))
-                    && (other.y <= (tile.y + 1))
-                    && (other.y >= (tile.y - 1)))
-                {
-                    // If the tile is covered by an odd amount of layers, the hammer hit is equivalent to a chisel hit,
-                    // otherwise the hammer hit is half as efficient
-                    reachableTilesAmount += (other.layers % 2 == 1) ? 2 : 1;
-                }
+                continue;
             }
 
-            if (reachableTilesAmount > bestReachableTilesAmount)
+            if (!items.has(cell.reward.rewardID))
             {
-                bestReachableTilesAmount = reachableTilesAmount;
-                bestReachableTileX = tile.x;
-                bestReachableTileY = tile.y;
+                items.set(cell.reward.rewardID, { cells: [] });
             }
+
+            const cellData = items.get(cell.reward.rewardID);
+            cellData.cells.push(
+                {
+                    cell,
+                    coord: App.game.underground.mine.getCoordinateForGridIndex(index),
+                    isRevealed: (cell.layerDepth === 0)
+                });
         }
 
-        // Only use the hammer if it is the most efficient move
-        // (i.e. a hammer hit would save us more energy than attempting to clear the tiles using purely chisel hits)
-
-        let hammerEfficiency = 2 * (Underground.HAMMER_ENERGY / Underground.CHISEL_ENERGY)
-        let useHammer = (bestReachableTilesAmount > hammerEfficiency)
-
-        let useToolX = useHammer ? bestReachableTileX : nextTilesToMine[0].x;
-        let useToolY = useHammer ? bestReachableTileY : nextTilesToMine[0].y;
-        return { useHammer, useToolX, useToolY };
+        return items;
     }
 
     /**
-     * @brief Processes the mine tiles and gathers the state of the hidden items
+     * @brief Gets the best move amongst the provided options
      *
-     * For each item, the following information will be gathered:
-     *    - The id of the item
-     *    - If the item is completed (ie. all tiles are revealed)
-     *    - If the item is revealed (at least one tile is revealed)
-     *    - The status of each tile of the item:
-     *        - Its x and y coordinates
-     *        - Whether it's revealed
-     *        - How many layers it's covered with
+     * @param currentBestMove: The current best move
+     * @param candidate: The best move candidate
      *
-     * @returns The gathered information
+     * @return The best option between the @p currentBestMove and the @p candidate
      */
-    static __internal__getItemsState()
+    static __internal__selectBestMove(currentBestMove, candidate)
     {
-        let itemsState = new Map();
-
-        /* Disabling because it doesn't work in 10.23
-
-        for (const row of Array(Mine.rewardGrid.length).keys())
+        if (candidate == null)
         {
-            for (const column of Array(Mine.rewardGrid[row].length).keys())
-            {
-                let content = Mine.rewardGrid[row][column];
-                if (content !== 0)
-                {
-                    if (!itemsState.has(content.value))
-                    {
-                        itemsState.set(content.value,
-                                       {
-                                           id: content.value,
-                                           completed: true,
-                                           revealed: false,
-                                           tiles: []
-                                       });
-                    }
+            return currentBestMove;
+        }
 
-                    let itemData = itemsState.get(content.value);
-                    itemData.completed &= content.revealed;
-                    itemData.revealed |= content.revealed;
-                    itemData.tiles.push({ x: row, y: column, revealed: content.revealed, layers: Mine.grid[row][column]() });
-                }
+        if (currentBestMove == null)
+        {
+            return candidate;
+        }
+
+        // In case we're looking for reveal efficiency, consider the revealCount first
+        if ((candidate.revealCount != undefined) && (candidate.revealCount > currentBestMove.revealCount))
+        {
+            return candidate;
+        }
+        else if ((candidate.revealCount != undefined) && (candidate.revealCount < currentBestMove.revealCount))
+        {
+            return currentBestMove;
+        }
+
+        // Then consider efficiency
+        if (candidate.efficiency > currentBestMove.efficiency)
+        {
+            return candidate;
+        }
+
+        // Favour Hammer use over chisel in case the efficiency is the same
+        if ((candidate.efficiency == currentBestMove.efficiency)
+            && (candidate.tool == UndergroundToolType.Hammer))
+        {
+            return candidate;
+        }
+
+        // Stop here if one of the item is not focused on revealing new items
+        if ((candidate.visibleNeighborCount == undefined) || (currentBestMove.visibleNeighborCount == undefined))
+        {
+            return currentBestMove;
+        }
+
+        /***
+         * Specific checks when trying to reveal new items
+         **/
+
+        // Favor chisel use that would reveal the selected cell faster
+        const candidateUseNeededToReveal = this.__internal__getChiselUseNeededToRevealAtCoord(candidate.coord);
+        const currentBestMoveUseNeededToReveal = this.__internal__getChiselUseNeededToRevealAtCoord(currentBestMove.coord);
+        if ((candidateUseNeededToReveal < currentBestMoveUseNeededToReveal))
+        {
+            return candidate;
+        }
+
+        // Favor Chisel moves with less visible neighbor, the grid coverage would be much more efficient
+        if (candidate.visibleNeighborCount < currentBestMove.visibleNeighborCount)
+        {
+            return candidate;
+        }
+
+        return currentBestMove;
+    }
+
+    /**
+     * @brief Checks if a cell has at least one visible neighbor of its current item
+     *
+     * @param itemData: The partially found item data
+     * @param cell: The cell to check
+     *
+     * @return True if the cell has at least one visible neighbor, false otherwise
+     */
+    static __internal__cellHasVisibleNeighborWithTheSameItem(itemData, cell)
+    {
+        for (const cellCandidate of itemData.cells)
+        {
+            if (!cellCandidate.isRevealed)
+            {
+                continue;
+            }
+
+            const xDistance = Math.abs(cellCandidate.coord.x - cell.coord.x)
+            const yDistance = Math.abs(cellCandidate.coord.y - cell.coord.y)
+
+            if ((xDistance + yDistance) == 1)
+            {
+                return true;
             }
         }
         */
 
-        return itemsState;
+        return false;
+    }
+
+    /**
+     * @brief Counts the visible neighbor of the cell at the given @p index
+     *
+     * @note Out of grid neighbor (for border cells) are considered visible
+     *
+     * @param index: The partially found item data
+     *
+     * @return The visible neighbor count
+     */
+    static __internal__getCellVisibleNeighborCount(index)
+    {
+        let visibleNeighborCount = 0;
+
+        for (const offset of [ -App.game.underground.mine.width, -1, 1, App.game.underground.mine.width ])
+        {
+            const neighborIndex = index + offset;
+
+            // Skip out of grid indexes
+            if ((neighborIndex < 0) || (neighborIndex >= App.game.underground.mine.grid.length))
+            {
+                continue;
+            }
+
+            if (App.game.underground.mine.grid[neighborIndex].layerDepth == 0)
+            {
+                visibleNeighborCount++;
+            }
+        }
+
+        const coord = App.game.underground.mine.getCoordinateForGridIndex(index);
+
+        // Consider out of grid indexes as visible neighbor
+        if ((coord.x == 0) || (coord.x == (App.game.underground.mine.width - 1)))
+        {
+            visibleNeighborCount++;
+        }
+
+        if ((coord.y == 0) || (coord.y == (App.game.underground.mine.height - 1)))
+        {
+            visibleNeighborCount++;
+        }
+
+        return visibleNeighborCount;
+    }
+
+    /**
+     * @brief Computes the hammer use info if used on the given @p cell
+     *
+     * @param itemData: The partially found item data
+     * @param cell: The cell to check
+     *
+     * @return The given cell hammer use info
+     */
+    static __internal__getHammerUseEfficiency(itemData, cell)
+    {
+        let efficiency = 0;
+
+        // TODO (23/11/2024): Consider other items in some cases (both revealed ?)
+        for (const cellCandidate of itemData.cells)
+        {
+            if (cellCandidate.isRevealed)
+            {
+                continue;
+            }
+
+            const xDistance = Math.abs(cellCandidate.coord.x - cell.coord.x)
+            const yDistance = Math.abs(cellCandidate.coord.y - cell.coord.y)
+
+            // TODO (23/11/2024): Consider blocks at a range of 2 in some cases
+            if ((xDistance + yDistance) <= 1)
+            {
+                efficiency++;
+            }
+        }
+
+        return {
+                   tool: UndergroundToolType.Hammer,
+                   efficiency,
+                   coord: cell.coord
+               };
+    }
+
+    /**
+     * @brief Computes the hammer use info if used to reveal around the given cell @p index
+     *
+     * @param index: The cell index to check
+     *
+     * @return The given cell hammer use info
+     */
+    static __internal__getHammerRevealEfficiency(index)
+    {
+        const coord = App.game.underground.mine.getCoordinateForGridIndex(index);
+
+        const isBorderCell = (coord.x == 0) || (coord.x == (App.game.underground.mine.width - 1))
+                          || (coord.y == 0) || (coord.y == (App.game.underground.mine.height - 1));
+
+        // Don't consider hammer use on border cells
+        if (isBorderCell)
+        {
+            return null;
+        }
+
+        // Initialize with the current cell value
+        const currentCell = App.game.underground.mine.grid[index];
+        let efficiency = (currentCell.layerDepth >= 1) ? 1 : 0;
+        let revealCount = (currentCell.layerDepth == 1) ? 1 : 0;
+
+        for (const offset of [ -(App.game.underground.mine.width - 1), -App.game.underground.mine.width, -(App.game.underground.mine.width + 1),
+                               -1, 1,
+                               (App.game.underground.mine.width - 1), App.game.underground.mine.width, (App.game.underground.mine.width + 1) ])
+        {
+            const cell = App.game.underground.mine.grid[index + offset];
+
+            if (cell.layerDepth >= 1)
+            {
+                efficiency++;
+            }
+
+            if (cell.layerDepth == 1)
+            {
+                revealCount++;
+            }
+        }
+
+        return {
+            tool: UndergroundToolType.Hammer,
+            efficiency,
+            revealCount,
+            coord
+        };
+    }
+
+    /**
+     * @brief Computes the chisel use needed to reveal the cell at the given @p coord
+     *
+     * @param coord: The coordinates of the cell on the Underground grid
+     *
+     * @returns The number of use needed
+     */
+    static __internal__getChiselUseNeededToRevealAtCoord(coord)
+    {
+        const index = App.game.underground.mine.getGridIndexForCoordinate(coord)
+        const cell = App.game.underground.mine.grid[index];
+        return Math.floor(cell.layerDepth / 2) + (cell.layerDepth % 2);
     }
 }
