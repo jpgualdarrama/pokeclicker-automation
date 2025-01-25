@@ -534,7 +534,6 @@ class AutomationUnderground
                 return true;
             }
         }
-        */
 
         return false;
     }
