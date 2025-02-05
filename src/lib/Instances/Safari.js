@@ -386,13 +386,11 @@ class AutomationSafari
             && (Safari.itemGrid().length != 0))
         {
             // Move the player to the nearest item
-            /* JP Add Code in __internal__moveToNearestItem to use avoid water and avoid grass */
             this.__internal__moveToNearestItem();
             return;
         }
 
         // Move the player to the nearest encounter
-        /* JP Add Code in __internal__moveToNearestEncounterZone to use avoid water and avoid grass */
         this.__internal__moveToNearestEncounterZone();
     }
 
@@ -447,9 +445,23 @@ class AutomationSafari
         }
 
         // If AvoidWater is enabled, set the cost of water tiles to -1
-
+        if ((Automation.Utils.LocalStorage.getValue(this.Settings.AvoidWater) === "true")
+        {
+            for (const tile of Automation.Safari.__internal__safariGridData.Water)
+            {
+                this.__internal__safariMovesCost[tile.y][tile.x] = -1;
+            }
+        }
+        
         // If AvoidGrass is enabled, set the cost of grass tiles to -1
-
+        if ((Automation.Utils.LocalStorage.getValue(this.Settings.AvoidGrass) === "true")
+        {
+            for (const tile of Automation.Safari.__internal__safariGridData.Grass)
+            {
+                this.__internal__safariMovesCost[tile.y][tile.x] = -1;
+            }
+        }
+        
         // Start at the users position
         let toUpdateNext = [ { x: Safari.playerXY.x, y: Safari.playerXY.y } ];
 
