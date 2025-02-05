@@ -446,6 +446,10 @@ class AutomationSafari
             this.__internal__safariMovesCost[tile.y][tile.x] = -1;
         }
 
+        // If AvoidWater is enabled, set the cost of water tiles to -1
+
+        // If AvoidGrass is enabled, set the cost of grass tiles to -1
+
         // Start at the users position
         let toUpdateNext = [ { x: Safari.playerXY.x, y: Safari.playerXY.y } ];
 
