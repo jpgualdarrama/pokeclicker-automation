@@ -445,7 +445,7 @@ class AutomationSafari
         }
 
         // If AvoidWater is enabled, set the cost of water tiles to -1
-        if ((Automation.Utils.LocalStorage.getValue(this.Settings.AvoidWater) === "true")
+        if (Automation.Utils.LocalStorage.getValue(this.Settings.AvoidWater) === "true")
         {
             for (const tile of Automation.Safari.__internal__safariGridData.Water)
             {
@@ -454,7 +454,7 @@ class AutomationSafari
         }
         
         // If AvoidGrass is enabled, set the cost of grass tiles to -1
-        if ((Automation.Utils.LocalStorage.getValue(this.Settings.AvoidGrass) === "true")
+        if (Automation.Utils.LocalStorage.getValue(this.Settings.AvoidGrass) === "true")
         {
             for (const tile of Automation.Safari.__internal__safariGridData.Grass)
             {
