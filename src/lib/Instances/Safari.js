@@ -746,10 +746,17 @@ class AutomationSafari
         let candidate;
         let candidateCost = Number.MAX_SAFE_INTEGER;
 
+        const avoidWater = Automation.Utils.LocalStorage.getValue(this.Settings.AvoidWater) === "true";
+        const avoidGrass = Automation.Utils.LocalStorage.getValue(this.Settings.AvoidGrass) === "true";
+
         for (const tile of this.__internal__encounterCandidates)
         {
             // Exclude the player's current position
             if (tile.x == Safari.playerXY.x && tile.y == Safari.playerXY.y) continue;
+    
+            if(avoidWater && (Automation.Safari.__internal__safariGridData.Water.indexOf(tile) >= 0)) continue;
+
+            if(avoidGrass && (Automation.Safari.__internal__safariGridData.Grass.indexOf(tile) >= 0)) continue;
 
             const currentCost = this.__internal__safariMovesCost[tile.y][tile.x];
             if ((currentCost < candidateCost)
