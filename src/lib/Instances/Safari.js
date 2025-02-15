@@ -652,7 +652,6 @@ class AutomationSafari
             && PartyController.getPokerusStatus(SafariBattle.enemy.id) >= GameConstants.Pokerus.Resistant)
         {
             // if the encounter is a shiny, need to confirm the run button after we call run
-            // TODO: Use filters to determine if we should attempt to catch the shiny
             if(SafariBattle.enemy.shiny) {
                 console.log("Shiny encountered! Setting timeout for " + SafariBattle.Speed.turnLength * 2)
                 // the run() function delays for SafariBattle.Speed.turnLength,
