@@ -8,7 +8,6 @@ class AutomationSafari
                           FeatureEnabled: "Safari-HuntEnabled",
                           FocusOnBaitAchievements: "Safari-BaitAchievements",
                           InfinitRepeat: "Safari-InfinitRepeat",
-                          /// @TODO: Use filters instead of this rudimentary setting
                           SkipResistant: "Safari-SkipResistant",
                           AvoidWater: "Safari-AvoidWater",
                           AvoidGrass: "Safari-AvoidGrass"
