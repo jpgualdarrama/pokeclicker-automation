@@ -21,7 +21,7 @@ class Automation
     static Trivia = AutomationTrivia;
     static Underground = AutomationUnderground;
     static Utils = AutomationUtils;
-    static Vitamins = AutomationVitamins;
+    // static Vitamins = AutomationVitamins;
 
     static InitSteps = class AutomationInitSteps
     {
@@ -71,7 +71,7 @@ class Automation
                     this.Underground.initialize(initStep);
                     this.Farm.initialize(initStep);
                     this.Shop.initialize(initStep);
-                    this.Vitamins.initialize(initStep);
+                    // this.Vitamins.initialize(initStep);
                     this.Items.initialize(initStep);
                     this.Notifications.initialize(initStep);
 
