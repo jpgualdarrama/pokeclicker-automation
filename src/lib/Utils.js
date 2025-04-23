@@ -10,6 +10,7 @@ class AutomationUtils
     static OakItem = AutomationUtilsOakItem;
     static Pokeball = AutomationUtilsPokeball;
     static Route = AutomationUtilsRoute;
+    static OptimalVitamins = AutomationUtilsOptimalVitamins;
 
     /**
      * @brief Initializes the Utils components
