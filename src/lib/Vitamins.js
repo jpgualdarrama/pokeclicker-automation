@@ -101,12 +101,17 @@ class AutomationVitamins {
         const pokemonList = App.game.party.caughtPokemon;
 
         pokemonList.forEach(pokemon => {
+            console.log("Pokemon: ", pokemon);
 
             let applyVitamins = (!pokemon.isShiny) || (pokemon.isShiny && !Automation.Utils.LocalStorage.getValue(this.Settings.SkipShiny));
+
+            console.log("Apply vitamins: ", applyVitamins);
 
             if (applyVitamins)
             {
                 const optimalVitamins = Automation.Utils.OptimalVitamins.getBestVitamins(pokemon.baseAttack, pokemon.eggCycles, region);
+
+                console.log("Optimal vitamins: ", optimalVitamins);
 
                 // Apply vitamins using the new internal function
                 this.__internal__applyVitamins(
