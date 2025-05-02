@@ -1,11 +1,11 @@
 /**
  * @class The AutomationVitamins class automates the application of optimal vitamins to Pokémon.
  */
-const { getBestVitamins } = require('./Utils/OptimalVitamins');
 
 class AutomationVitamins {
     static Settings = {
         FeatureEnabled: "Vitamins-Enabled",
+        SkipShiny: "Vitamins-SkipShiny",
     };
 
     /**
@@ -16,6 +16,7 @@ class AutomationVitamins {
     static initialize(initStep) {
         if (initStep === Automation.InitSteps.BuildMenu)
         {
+            Automation.Utils.LocalStorage.setDefaultValue(this.Settings.SkipShiny, true);
             // Build the menu
             this.__internal__buildMenu();
         }
@@ -74,6 +75,20 @@ class AutomationVitamins {
             vitaminsContainer
         );
         autoVitaminsButton.addEventListener("click", this.toggleAutoVitamins.bind(this), false);
+
+        const vitaminsSettingPanel = Automation.Menu.addSettingPanel(autoVitaminsButton.parentElement.parentElement);
+
+        const titleDiv = Automation.Menu.createTitleElement("Vitamins advanced settings");
+        titleDiv.style.marginBottom = "10px";
+        vitaminsSettingPanel.appendChild(titleDiv);
+
+        const skipShinyTooltip = "Skip shiny Pokémon when applying vitamins.";
+        Automation.Menu.addLabeledAdvancedSettingsToggleButton(
+            "Skip shiny Pokémon",
+            this.Settings.SkipShiny,
+            skipShinyTooltip,
+            vitaminsSettingPanel
+        );
     }
 
     /**
@@ -86,7 +101,11 @@ class AutomationVitamins {
         const pokemonList = App.game.party.caughtPokemon;
 
         pokemonList.forEach(pokemon => {
-            if (!pokemon.isShiny) { // Example condition: skip shiny Pokémon
+
+            let applyVitamins = (!pokemon.isShiny) || (pokemon.isShiny && !Automation.Utils.LocalStorage.getValue(this.Settings.SkipShiny));
+
+            if (applyVitamins)
+            {
                 const optimalVitamins = Automation.Utils.OptimalVitamins.getBestVitamins(pokemon.baseAttack, pokemon.eggCycles, region);
 
                 // Apply vitamins using the new internal function
@@ -94,7 +113,7 @@ class AutomationVitamins {
                     pokemon,
                     optimalVitamins.carbos,
                     optimalVitamins.calcium,
-                    ptimalVitamins.protein
+                    optimalVitamins.protein
                 );
             }
         });
