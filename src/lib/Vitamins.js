@@ -103,9 +103,11 @@ class AutomationVitamins {
         pokemonList.forEach(pokemon => {
             console.log("Pokemon: ", pokemon);
 
-            let applyVitamins = (!pokemon.shiny) || (pokemon.shiny && !Automation.Utils.LocalStorage.getValue(this.Settings.SkipShiny));
+            let applyVitamins = (!pokemon.shiny) || (pokemon.shiny && !(Automation.Utils.LocalStorage.getValue(this.Settings.SkipShiny) == "false"));
 
-            console.log("Apply vitamins: ", applyVitamins);
+            console.log("Shiny: ", pokemon.shiny,
+                        ", Skip shiny: ", Automation.Utils.LocalStorage.getValue(this.Settings.SkipShiny),
+                        ", Apply vitamins: ", applyVitamins);
 
             if (applyVitamins)
             {
