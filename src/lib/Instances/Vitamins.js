@@ -72,10 +72,9 @@ class AutomationVitamins {
      * @param {Object} vitamins - The optimal vitamins to apply.
      */
     static __internal__applyVitamins(pkmn, vitamins) {
-        const currentVitamins = pkmn.vitaminUsed;
-        const currentCarbos   = currentVitamins[GameConstants.VitaminType.Carbos];
-        const currentCalcium  = currentVitamins[GameConstants.VitaminType.Calcium];
-        const currentProtein  = currentVitamins[GameConstants.VitaminType.Protein];
+        const currentCarbos   = pkmn.vitaminsUsed[GameConstants.VitaminType.Carbos]();
+        const currentCalcium  = pkmn.vitaminsUsed[GameConstants.VitaminType.Calcium]();
+        const currentProtein  = pkmn.vitaminsUsed[GameConstants.VitaminType.Protein]();
 
         const deltaCarbos  = currentCarbos - vitamins.Carbos;
         const deltaCalcium = currentCalcium - vitamins.Calcium;
