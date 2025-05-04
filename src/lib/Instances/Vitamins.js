@@ -93,5 +93,3 @@ class AutomationVitamins {
         // TODO: Add automation loop logic here.
     }
 }
-
-Automation.Vitamins = AutomationVitamins;
