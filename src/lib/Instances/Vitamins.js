@@ -85,7 +85,7 @@ class AutomationVitamins {
         }
         else if (deltaCarbos < 0
                  && player.itemList.Carbos() > 0) {
-            pkmn.useVitamin(GameConstants.VitaminType.Carbos, -deltaCarbos);
+            pkmn.useVitamin(GameConstants.VitaminType.Carbos, Math.min(player.itemList.Carbos(), -deltaCarbos));
         }
 
         if(deltaCalcium > 0) {
@@ -93,14 +93,14 @@ class AutomationVitamins {
         }
         else if (deltaCalcium < 0
                  && player.itemList.Calcium() > 0) {
-            pkmn.useVitamin(GameConstants.VitaminType.Calcium, -deltaCalcium);
+            pkmn.useVitamin(GameConstants.VitaminType.Calcium, Math.min(player.itemList.Calcium(), -deltaCalcium));
         }
         if(deltaProtein > 0) {
             pkmn.removeVitamin(GameConstants.VitaminType.Protein, deltaProtein);
         }
         else if (deltaProtein < 0
                  && player.itemList.Protein() > 0) {
-            pkmn.useVitamin(GameConstants.VitaminType.Protein, -deltaProtein);
+            pkmn.useVitamin(GameConstants.VitaminType.Protein, Math.min(player.itemList.Protein(), -deltaProtein));
         }
     }
 
