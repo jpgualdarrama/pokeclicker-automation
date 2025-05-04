@@ -9,6 +9,7 @@ class Automation
     static Dungeon = AutomationDungeon;
     static Gym = AutomationGym;
     static Safari = AutomationSafari;
+    static Vitamins = AutomationVitamins;
 
     static Click = AutomationClick;
     static Farm = AutomationFarm;
@@ -21,7 +22,6 @@ class Automation
     static Trivia = AutomationTrivia;
     static Underground = AutomationUnderground;
     static Utils = AutomationUtils;
-    static Vitamins = AutomationVitamins;
 
     static InitSteps = class AutomationInitSteps
     {

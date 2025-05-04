@@ -44,6 +44,7 @@ class AutomationComponentLoader
         this.__addScript("src/lib/Instances/Dungeon.js");
         this.__addScript("src/lib/Instances/Gym.js");
         this.__addScript("src/lib/Instances/Safari.js");
+        this.__addScript("src/lib/Instances/Vitamins.js");
 
         this.__addScript("src/lib/Click.js");
         this.__addScript("src/lib/Farm.js");
@@ -56,7 +57,6 @@ class AutomationComponentLoader
         this.__addScript("src/lib/Trivia.js");
         this.__addScript("src/lib/Underground.js");
         this.__addScript("src/lib/Utils.js");
-        this.__addScript("src/lib/Vitamins.js");
 
         this.__loadingOrder += 1;
         this.__addScript("src/Automation.js");
