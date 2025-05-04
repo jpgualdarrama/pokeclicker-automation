@@ -25,19 +25,17 @@ class AutomationVitamins {
      */
     static __internal__buildMenu() {
         const filtersDiv = document.getElementById("multivitamin-filters");
-        if (!filtersDiv || !filtersDiv.nextElementSibling) {
+        if (!filtersDiv || !filtersDiv.parentElement) {
             console.error("Could not find the appropriate div to append the button.");
             return;
         }
-
-        const targetDiv = filtersDiv.nextElementSibling;
 
         const applyVitaminsButton = document.createElement("button");
         applyVitaminsButton.textContent = "Apply Optimal Vitamins";
         applyVitaminsButton.style.margin = "10px";
         applyVitaminsButton.onclick = this.__internal__applyOptimalVitamins.bind(this);
 
-        targetDiv.appendChild(applyVitaminsButton);
+        filtersDiv.parentElement.appendChild(applyVitaminsButton);
     }
 
     /**
