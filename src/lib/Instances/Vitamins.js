@@ -51,7 +51,7 @@ class AutomationVitamins {
                 player.highestRegion()
             );
 
-            Automation.Vitamins.__internal__applyVitamins(pokemon, optimalVitamins);
+            this.__internal__applyVitamins(pokemon, optimalVitamins);
         });
     }
 
@@ -72,14 +72,36 @@ class AutomationVitamins {
      * @param {Object} vitamins - The optimal vitamins to apply.
      */
     static __internal__applyVitamins(pkmn, vitamins) {
-        if (player.itemList.Carbos() > 0 && vitamins.carbos > 0) {
-            pkmn.useVitamin(GameConstants.VitaminType.Carbos, Math.min(player.itemList.Carbos(), vitamins.carbos));
+        const currentVitamins = pkmn.vitaminUsed;
+        const currentCarbos   = currentVitamins[GameConstants.VitaminType.Carbos];
+        const currentCalcium  = currentVitamins[GameConstants.VitaminType.Calcium];
+        const currentProtein  = currentVitamins[GameConstants.VitaminType.Protein];
+
+        const deltaCarbos  = currentCarbos - vitamins.Carbos;
+        const deltaCalcium = currentCalcium - vitamins.Calcium;
+        const deltaProtein = currentProtein - vitamins.Protein;
+
+        if(deltaCarbos > 0) {
+            pkmn.removeVitamin(GameConstants.VitaminType.Carbos, deltaCarbos);
         }
-        if (player.itemList.Calcium() > 0 && vitamins.calcium > 0) {
-            pkmn.useVitamin(GameConstants.VitaminType.Calcium, Math.min(player.itemList.Calcium(), vitamins.calcium));
+        else if (deltaCarbos < 0
+                 && player.itemList.Carbos() > 0) {
+            pkmn.useVitamin(GameConstants.VitaminType.Carbos, -deltaCarbos);
         }
-        if (player.itemList.Protein() > 0 && vitamins.protein > 0) {
-            pkmn.useVitamin(GameConstants.VitaminType.Protein, Math.min(player.itemList.Protein(), vitamins.protein));
+
+        if(deltaCalcium > 0) {
+            pkmn.removeVitamin(GameConstants.VitaminType.Calcium, deltaCalcium);
+        }
+        else if (deltaCalcium < 0
+                 && player.itemList.Calcium() > 0) {
+            pkmn.useVitamin(GameConstants.VitaminType.Calcium, -deltaCalcium);
+        }
+        if(deltaProtein > 0) {
+            pkmn.removeVitamin(GameConstants.VitaminType.Protein, deltaProtein);
+        }
+        else if (deltaProtein < 0
+                 && player.itemList.Protein() > 0) {
+            pkmn.useVitamin(GameConstants.VitaminType.Protein, -deltaProtein);
         }
     }
 
