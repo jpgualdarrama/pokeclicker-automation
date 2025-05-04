@@ -24,19 +24,20 @@ class AutomationVitamins {
      * @brief Builds the menu for the Vitamins automation feature.
      */
     static __internal__buildMenu() {
-        const vitaminsModal = document.getElementById("pokemonVitaminExpandedModal");
-
-        if (!vitaminsModal) {
-            console.error("Vitamins modal not found.");
+        const filtersDiv = document.getElementById("multivitamin-filters");
+        if (!filtersDiv || !filtersDiv.nextElementSibling) {
+            console.error("Could not find the appropriate div to append the button.");
             return;
         }
+
+        const targetDiv = filtersDiv.nextElementSibling;
 
         const applyVitaminsButton = document.createElement("button");
         applyVitaminsButton.textContent = "Apply Optimal Vitamins";
         applyVitaminsButton.style.margin = "10px";
         applyVitaminsButton.onclick = this.__internal__applyOptimalVitamins.bind(this);
 
-        vitaminsModal.appendChild(applyVitaminsButton);
+        targetDiv.appendChild(applyVitaminsButton);
     }
 
     /**
