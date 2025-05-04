@@ -24,7 +24,7 @@ class AutomationVitamins {
      * @brief Builds the menu for the Vitamins automation feature.
      */
     static __internal__buildMenu() {
-        const vitaminsModal = document.getElementById("vitaminsModal");
+        const vitaminsModal = document.getElementById("pokemonVitaminExpandedModal");
 
         if (!vitaminsModal) {
             console.error("Vitamins modal not found.");
