@@ -1172,6 +1172,7 @@ class AutomationFarm
 
         // #30 Unlock at least one Nomel berry through mutation
         const nomelConfig = {};
+        nomelConfig[BerryType.Wepear] = [ 0, 3, 15, 18 ];
         nomelConfig[BerryType.Pinap] = [ 6, 9, 21, 24 ];
         this.__internal__addUnlockMutationStrategy(BerryType.Nomel, nomelConfig);
 

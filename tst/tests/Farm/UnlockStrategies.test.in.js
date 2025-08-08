@@ -1227,14 +1227,15 @@ describe(`${AutomationTestUtils.categoryPrefix}Gen 3 unlocks`, () =>
         expect(Automation.Farm.__internal__currentStrategy).toBe(Automation.Farm.__internal__unlockStrategySelection[46]);
 
         // The layout should look like that
-        // | | | | | |
-        // | |a| | |a|  with:  a : Pinap
-        // | | | | | |
-        // | | | | | |
-        // | |a| | |a|
+        // |a| | |a| |
+        // | |b| | |b|  with:  a : Wepear
+        // | | | | | |         b : Pinap
+        // |a| | |a| |
+        // | |b| | |b|
         const expectedConfig = {};
+        expectedConfig[BerryType.Wepear] = [ 0, 3, 15, 18 ];
         expectedConfig[BerryType.Pinap] = [ 6, 9, 21, 24 ];
-        const expectedOrder = [ BerryType.Pinap ];
+        const expectedOrder = [ BerryType.Wepear, BerryType.Pinap ];
         runBerryMutationTest(BerryType.Nomel, expectedConfig, expectedOrder);
     });
 
